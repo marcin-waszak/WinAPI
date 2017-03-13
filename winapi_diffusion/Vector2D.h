@@ -22,4 +22,9 @@ struct Vector2D
 	{
 		return *this += rhs;
 	}
+
+	Vector2D<T> operator+(const Vector2D<T>& rhs) const
+	{
+		return *this + rhs;
+	}
 };

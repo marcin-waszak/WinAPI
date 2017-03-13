@@ -51,8 +51,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
 	MSG msg;
 
-	srand((unsigned)time(nullptr));
-
 	// Main message loop:
 	while (GetMessage(&msg, nullptr, 0, 0))
 	{
@@ -116,11 +114,13 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 	  return FALSE;
 	}
 
+	srand((unsigned)time(nullptr));
+
 	std::vector<Ball>* balls =  new std::vector<Ball>();
 	for (int i = 0; i < 10; ++i)
 	{
-		int px = 32 + rand() % 128;
-		int py = 32 + rand() % 128;
+		int px = 640 + rand() % 128;
+		int py = -320 + rand() % 128;
 
 		int vx = -32 + rand() % 64;
 		int vy = -32 + rand() % 64;
@@ -128,7 +128,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 		Vector2D<double> position(px, py);
 		Vector2D<double> velocity(vx, vy);
 
-		balls->push_back(Ball(position, velocity));
+		balls->push_back(Ball(30.0, position, velocity));
 	}
 
 	// on success SetWindowLongPtr rewrites last pointer
@@ -137,7 +137,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 	if (!SetWindowLongPtr(hWnd, GWLP_USERDATA, (LONG_PTR)balls))
 		return FALSE;
 
-	SetTimer(hWnd, ID_TIMER, 500, nullptr);
+	SetTimer(hWnd, ID_TIMER, 50, nullptr);
 	SetMenu(hWnd, nullptr);
 	ShowWindow(hWnd, nCmdShow);
 	UpdateWindow(hWnd);
@@ -210,7 +210,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		case ID_TIMER:
 			for (auto& ball : *balls)
 				ball.Tick();
-			InvalidateRect(hWnd, nullptr, false);
+			InvalidateRect(hWnd, nullptr, true);
 			break;
 			}
 		}
@@ -238,11 +238,7 @@ void drawBalls(HDC hdc, std::vector<Ball>* balls) {
 	SelectObject(hdc, hBrush);
 
 	for (auto& ball : *balls)
-	{
-		int x = ball.GetPosition().x;
-		int y = ball.GetPosition().y;
-		Ellipse(hdc, x, y, x + 10, y + 10);
-	}
+		ball.Draw(hdc);
 
 	//RECT rcCli;
 	//GetClientRect(WindowFromDC(hdc), &rcCli);
