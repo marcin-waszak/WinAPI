@@ -23,7 +23,7 @@ public:
 	void SetRadius(double radius);
 	void SetPosition(Vector2D<double> position);
 	void SetVelocity(Vector2D<double> velocity);
-	void HandleCollision(HWND hWnd, std::vector<Ball>* balls);
+	void HandleCollision(HWND hWnd, HDC hdc, std::vector<Ball>* balls);
 	void Move();
 	void Draw(HDC hdc) const;
 	~Ball();

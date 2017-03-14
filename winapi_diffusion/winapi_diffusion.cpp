@@ -31,8 +31,9 @@ void AnimationTick(HWND hWnd, std::vector<Ball>* balls);
 void DrawBalls(HDC hdc, std::vector<Ball>* balls);
 
 //WORKAROUND
+BOOL bLeft = TRUE;
+HDC hDC;
 std::vector<Ball>* balls;
-BOOL bFirst = TRUE;
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 					_In_opt_ HINSTANCE hPrevInstance,
@@ -135,8 +136,8 @@ BOOL InitInstance(HINSTANCE hInstance, LPWSTR lpCmdLine, int nCmdShow)
 		balls->push_back(Ball(60.0, position, velocity));
 	}
 
-	if (lstrcmp(lpCmdLine, L"Second"))
-		bFirst = FALSE;
+	if (lstrcmp(lpCmdLine, L"Right"))
+		bLeft = FALSE;
 
 	SetTimer(hWnd, ID_TIMER, 10, nullptr);
 	SetMenu(hWnd, nullptr);
@@ -144,14 +145,7 @@ BOOL InitInstance(HINSTANCE hInstance, LPWSTR lpCmdLine, int nCmdShow)
 	ShowWindow(hWnd, nCmdShow);
 	UpdateWindow(hWnd);
 
-	//if (!SetAtrribute(hWnd, 0x01, (LONG)bFirst))
-	//	return FALSE;
-
-	//if (!SetAtrribute(hWnd, 0x02, (LONG)GetDC(hWnd)))
-	//	return FALSE;
-
-	//if (!SetAtrribute(hWnd, 0x03, (LONG)balls))
-	//	return FALSE;
+	hDC = GetDC(hWnd);
 
 	return TRUE;
 }
@@ -168,8 +162,6 @@ BOOL InitInstance(HINSTANCE hInstance, LPWSTR lpCmdLine, int nCmdShow)
 //
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-	auto balls = (std::vector<Ball>*)GetWindowLong(hWnd, 0x03 * 4);
-
 	switch (message)
 	{
 	case WM_KEYDOWN:
@@ -217,23 +209,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	return 0;
 }
 
-//BOOL SetAtrribute(HWND hWnd, int nIndex, LONG value) {
-//	// on success SetWindowLongPtr rewrites last pointer
-//	// this line is needed to prevent false zero error code
-//	SetWindowLong(hWnd, nIndex * 4, (LONG)666);
-//	if (!SetWindowLong(hWnd, nIndex * 4, value)) {
-//		auto x = GetLastError();
-//		return FALSE;
-//	}
-//
-//	return TRUE;
-//}
-
 void AnimationTick(HWND hWnd, std::vector<Ball>* balls)
 {
 	for (auto it = balls->begin(); it != balls->end(); ++it)
 	{
-		it->HandleCollision(hWnd, balls);
+		it->HandleCollision(hWnd, hDC, balls);
 		it->Move();
 	}
 }
