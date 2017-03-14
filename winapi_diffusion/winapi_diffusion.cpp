@@ -22,11 +22,12 @@ WCHAR szWindowClass[MAX_LOADSTRING];			// the main window class name
 
 // Forward declarations of functions included in this code module:
 ATOM				MyRegisterClass(HINSTANCE hInstance);
-BOOL				InitInstance(HINSTANCE, int);
+BOOL				InitInstance(HINSTANCE, LPWSTR, int);
 LRESULT CALLBACK	WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK	About(HWND, UINT, WPARAM, LPARAM);
 
-void AnimationTick(HDC hdc, std::vector<Ball>* balls);
+BOOL SetAtrribute(HWND hWnd, int nIndex, LONG_PTR value);
+void AnimationTick(HWND hWnd, std::vector<Ball>* balls);
 void DrawBalls(HDC hdc, std::vector<Ball>* balls);
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
@@ -37,15 +38,13 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	UNREFERENCED_PARAMETER(hPrevInstance);
 	UNREFERENCED_PARAMETER(lpCmdLine);
 
-	// TODO: Place code here.
-
 	// Initialize global strings
 	LoadStringW(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
 	LoadStringW(hInstance, IDC_WINAPI_DIFFUSION, szWindowClass, MAX_LOADSTRING);
 	MyRegisterClass(hInstance);
 
 	// Perform application initialization:
-	if (!InitInstance (hInstance, nCmdShow))
+	if (!InitInstance (hInstance, lpCmdLine, nCmdShow))
 	{
 		return FALSE;
 	}
@@ -67,8 +66,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	return (int) msg.wParam;
 }
 
-
-
 //
 //  FUNCTION: MyRegisterClass()
 //
@@ -83,7 +80,7 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
 	wcex.style			= CS_HREDRAW | CS_VREDRAW;
 	wcex.lpfnWndProc	= WndProc;
 	wcex.cbClsExtra		= 0;
-	wcex.cbWndExtra		= 0;
+	wcex.cbWndExtra		= 512;
 	wcex.hInstance		= hInstance;
 	wcex.hIcon			= LoadIcon(hInstance, MAKEINTRESOURCE(IDI_WINAPI_DIFFUSION));
 	wcex.hCursor		= LoadCursor(nullptr, IDC_ARROW);
@@ -105,7 +102,7 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
 //		In this function, we save the instance handle in a global variable and
 //		create and display the main program window.
 //
-BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
+BOOL InitInstance(HINSTANCE hInstance, LPWSTR lpCmdLine, int nCmdShow)
 {
 	hInst = hInstance; // Store instance handle in our global variable
 
@@ -134,14 +131,19 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 		balls->push_back(Ball(60.0, position, velocity));
 	}
 
-	// on success SetWindowLongPtr rewrites last pointer
-	// this line is needed to prevent false zero error code
-	SetWindowLongPtr(hWnd, GWLP_USERDATA, (LONG_PTR)666);
-	if (!SetWindowLongPtr(hWnd, GWLP_USERDATA, (LONG_PTR)balls))
+	BOOL bFirst = TRUE;
+	if (lstrcmp(lpCmdLine, L"Second"))
+		bFirst = FALSE;
+
+	//if (!SetAtrribute(hWnd, 0x01, (LONG_PTR)bFirst))
+	//	return FALSE;
+
+	if (!SetAtrribute(hWnd, GWLP_USERDATA, (LONG_PTR)balls))
 		return FALSE;
 
 	SetTimer(hWnd, ID_TIMER, 10, nullptr);
 	SetMenu(hWnd, nullptr);
+	SetWindowText(hWnd, lpCmdLine);
 	ShowWindow(hWnd, nCmdShow);
 	UpdateWindow(hWnd);
 
@@ -171,15 +173,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			case VK_ESCAPE:
 				PostQuitMessage(0);
 				break;
-
-			case VK_SPACE:
-				//SYSTEMTIME st;
-				//GetSystemTime(&st);
-				////drawCircle(hdc, st.wMilliseconds);
-				//ReleaseDC(hWnd, hdc);
-				//InvalidateRect(hWnd, nullptr, false);
-				break;
-
 			}
 		}
 		break;
@@ -189,21 +182,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			PAINTSTRUCT ps;
 			HDC hdc = BeginPaint(hWnd, &ps);
 			SetMapMode(hdc, MAP_MODE);
-			// TODO: Add any drawing code that uses hdc here...
 
-			////////
 			DrawBalls(hdc, balls);
-			////////
 
 			EndPaint(hWnd, &ps);
-
-			//SYSTEMTIME st;
-			//GetSystemTime(&st);
-			//LPTSTR lpszDynamic = new TCHAR[100];
-			//// Do something with lpszDynamic
-			//_snwprintf(lpszDynamic, 100 * sizeof(TCHAR), L"%d+aaa dzcdsc ac sac sa c sa csa xxx  ", st.wMilliseconds  );
-			//SetWindowText(hWnd, lpszDynamic);
-			//delete[] lpszDynamic;
 		}
 		break;
 
@@ -211,7 +193,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		{
 		switch (wParam) {
 		case ID_TIMER:
-			AnimationTick(GetDC(hWnd), balls);
+			AnimationTick(hWnd, balls);
 			InvalidateRect(hWnd, nullptr, true);
 			break;
 			}
@@ -229,12 +211,20 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	return 0;
 }
 
-void AnimationTick(HDC hdc, std::vector<Ball>* balls)
+BOOL SetAtrribute(HWND hWnd, int nIndex, LONG_PTR value) {
+	// on success SetWindowLongPtr rewrites last pointer
+	// this line is needed to prevent false zero error code
+	SetWindowLongPtr(hWnd, nIndex, (LONG_PTR)666);
+	if (!SetWindowLongPtr(hWnd, nIndex, value))
+		return FALSE;
+}
+
+void AnimationTick(HWND hWnd, std::vector<Ball>* balls)
 {
-	for (auto& ball : *balls)
+	for (auto it = balls->begin(); it != balls->end(); ++it)
 	{
-		ball.HandleCollision(hdc, balls);
-		ball.Move();
+		it->HandleCollision(hWnd, balls);
+		it->Move();
 	}
 }
 

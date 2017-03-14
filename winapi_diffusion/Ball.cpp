@@ -55,13 +55,9 @@ void Ball::SetVelocity(Vector2D<double> velocity)
 	velocity_ = velocity;
 }
 
-void Ball::SetVelocity(double vx, double vy)
+void Ball::HandleCollision(HWND hWnd, std::vector<Ball>* balls)
 {
-	velocity_ = Vector2D<double>(vx, vy);
-}
-
-void Ball::HandleCollision(HDC hdc, std::vector<Ball>* balls)
-{
+	HDC hdc = GetDC(hWnd);
 	RECT rectangle;
 	SetMapMode(hdc, MM_LOMETRIC);
 	GetClientRect(WindowFromDC(hdc), &rectangle);
