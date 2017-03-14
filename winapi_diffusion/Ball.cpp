@@ -17,9 +17,27 @@ const Vector2D<double>& Ball::GetVelocity() const
 	return velocity_;
 }
 
-Vector2D<double> Ball::GetCenter() const
+Vector2D<double> Ball::GetCenter(int position) const
 {
-	return position_ + Vector2D<double>(0.5 * radius_, 0.5 * radius_);
+	switch (position) {
+	case D_TOP:
+		return position_ + Vector2D<double>(radius_, 2*radius_);
+
+	case D_BOTTOM:
+		return position_ + Vector2D<double>(radius_, 0.0);
+
+	case D_LEFT:
+		return position_ + Vector2D<double>(0.0, radius_);
+
+	case D_RIGHT:
+		return position_ + Vector2D<double>(2 * radius_, radius_);
+
+	case D_MIDDLE:
+	default:
+		return position_ + Vector2D<double>(radius_, radius_);
+	}
+
+	return Vector2D<double>(0.0, 0.0);
 }
 
 void Ball::SetRadius(double radius)
@@ -37,7 +55,32 @@ void Ball::SetVelocity(Vector2D<double> velocity)
 	velocity_ = velocity;
 }
 
-void Ball::Tick()
+void Ball::SetVelocity(double vx, double vy)
+{
+	velocity_ = Vector2D<double>(vx, vy);
+}
+
+void Ball::HandleCollision(HDC hdc, std::vector<Ball>* balls)
+{
+	RECT rectangle;
+	SetMapMode(hdc, MM_LOMETRIC);
+	GetClientRect(WindowFromDC(hdc), &rectangle);
+	DPtoLP(hdc, (LPPOINT)&rectangle, 2);
+
+	if (GetCenter(D_LEFT).x < rectangle.left)
+		velocity_.x *= -1.0;
+
+	if (GetCenter(D_RIGHT).x > rectangle.right)
+		velocity_.x *= -1.0;
+
+	if (GetCenter(D_TOP).y > rectangle.top)
+		velocity_.y *= -1.0;
+
+	if (GetCenter(D_BOTTOM).y < rectangle.bottom)
+		velocity_.y *= -1.0;
+}
+
+void Ball::Move()
 {
 	position_ += velocity_;
 }
@@ -46,7 +89,7 @@ void Ball::Draw(HDC hdc) const
 {
 	double x = position_.x;
 	double y = position_.y;
-	Ellipse(hdc, x, y, x + radius_, y + radius_);
+	Ellipse(hdc, x, y, x + 2.0 * radius_, y + 2.0 * radius_);
 }
 
 Ball::~Ball()

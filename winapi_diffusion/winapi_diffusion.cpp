@@ -4,13 +4,15 @@
 #include "stdafx.h"
 #include "winapi_diffusion.h"
 
+#include "Ball.h"
+
 #include <cmath>
 #include <ctime>
 #include <vector>
-#include "Ball.h"
 
 #define MAX_LOADSTRING 100
 
+#define MAP_MODE MM_LOMETRIC
 #define ID_TIMER 1
 
 // Global Variables:
@@ -24,7 +26,8 @@ BOOL				InitInstance(HINSTANCE, int);
 LRESULT CALLBACK	WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK	About(HWND, UINT, WPARAM, LPARAM);
 
-void drawBalls(HDC hdc, std::vector<Ball>* balls);
+void AnimationTick(HDC hdc, std::vector<Ball>* balls);
+void DrawBalls(HDC hdc, std::vector<Ball>* balls);
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 					_In_opt_ HINSTANCE hPrevInstance,
@@ -117,27 +120,27 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 	srand((unsigned)time(nullptr));
 
 	std::vector<Ball>* balls =  new std::vector<Ball>();
-	for (int i = 0; i < 10; ++i)
+	for (int i = 0; i < 30; ++i)
 	{
 		int px = 640 + rand() % 128;
 		int py = -320 + rand() % 128;
 
-		int vx = -32 + rand() % 64;
-		int vy = -32 + rand() % 64;
+		int vx =  -32 + rand() % 64;
+		int vy =  -32 + rand() % 64;
 
 		Vector2D<double> position(px, py);
 		Vector2D<double> velocity(vx, vy);
 
-		balls->push_back(Ball(30.0, position, velocity));
+		balls->push_back(Ball(60.0, position, velocity));
 	}
 
 	// on success SetWindowLongPtr rewrites last pointer
-	// this line is needed to avoid false zero error code
+	// this line is needed to prevent false zero error code
 	SetWindowLongPtr(hWnd, GWLP_USERDATA, (LONG_PTR)666);
 	if (!SetWindowLongPtr(hWnd, GWLP_USERDATA, (LONG_PTR)balls))
 		return FALSE;
 
-	SetTimer(hWnd, ID_TIMER, 50, nullptr);
+	SetTimer(hWnd, ID_TIMER, 10, nullptr);
 	SetMenu(hWnd, nullptr);
 	ShowWindow(hWnd, nCmdShow);
 	UpdateWindow(hWnd);
@@ -185,11 +188,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		{
 			PAINTSTRUCT ps;
 			HDC hdc = BeginPaint(hWnd, &ps);
-			SetMapMode(hdc, MM_LOMETRIC);
+			SetMapMode(hdc, MAP_MODE);
 			// TODO: Add any drawing code that uses hdc here...
 
 			////////
-			drawBalls(hdc, balls);
+			DrawBalls(hdc, balls);
 			////////
 
 			EndPaint(hWnd, &ps);
@@ -208,8 +211,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		{
 		switch (wParam) {
 		case ID_TIMER:
-			for (auto& ball : *balls)
-				ball.Tick();
+			AnimationTick(GetDC(hWnd), balls);
 			InvalidateRect(hWnd, nullptr, true);
 			break;
 			}
@@ -227,7 +229,16 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	return 0;
 }
 
-void drawBalls(HDC hdc, std::vector<Ball>* balls) {
+void AnimationTick(HDC hdc, std::vector<Ball>* balls)
+{
+	for (auto& ball : *balls)
+	{
+		ball.HandleCollision(hdc, balls);
+		ball.Move();
+	}
+}
+
+void DrawBalls(HDC hdc, std::vector<Ball>* balls) {
 	HPEN hPen;
 	HBRUSH hBrush;
 
@@ -239,10 +250,6 @@ void drawBalls(HDC hdc, std::vector<Ball>* balls) {
 
 	for (auto& ball : *balls)
 		ball.Draw(hdc);
-
-	//RECT rcCli;
-	//GetClientRect(WindowFromDC(hdc), &rcCli);
-	//DPtoLP(hdc, (LPPOINT)&rcCli, 2);
 
 	DeleteObject(hPen);
 	DeleteObject(hBrush);

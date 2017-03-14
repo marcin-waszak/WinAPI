@@ -25,6 +25,6 @@ struct Vector2D
 
 	Vector2D<T> operator+(const Vector2D<T>& rhs) const
 	{
-		return *this + rhs;
+		return Vector2D<T>(this->x + rhs.x, this->y + rhs.y);
 	}
 };
