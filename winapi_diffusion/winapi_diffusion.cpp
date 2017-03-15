@@ -12,7 +12,8 @@
 
 #define MAX_LOADSTRING 100
 
-#define MAP_MODE MM_LOMETRIC
+#define W_WIDTH 800
+#define W_HEIGHT 600
 #define ID_TIMER 1
 
 // Global Variables:
@@ -24,16 +25,21 @@ WCHAR szWindowClass[MAX_LOADSTRING];			// the main window class name
 ATOM				MyRegisterClass(HINSTANCE hInstance);
 BOOL				InitInstance(HINSTANCE, LPWSTR, int);
 LRESULT CALLBACK	WndProc(HWND, UINT, WPARAM, LPARAM);
-INT_PTR CALLBACK	About(HWND, UINT, WPARAM, LPARAM);
 
 //BOOL SetAtrribute(HWND hWnd, int nIndex, LONG value);
 void AnimationTick(HWND hWnd, std::vector<Ball>* balls);
 void DrawBalls(HDC hdc, std::vector<Ball>* balls);
+void PassBall(Ball& ball);
+void ReceiveBall(HDC hdc, WPARAM wparam, LPARAM lparam);
 
 //WORKAROUND
 BOOL bLeft = TRUE;
 HDC hDC;
+HWND hWnd_second;
 std::vector<Ball>* balls;
+UINT msg_connect;
+UINT msg_respond;
+UINT msg_passball;
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 					_In_opt_ HINSTANCE hPrevInstance,
@@ -85,7 +91,7 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
 	wcex.style			= CS_HREDRAW | CS_VREDRAW;
 	wcex.lpfnWndProc	= WndProc;
 	wcex.cbClsExtra		= 0;
-	wcex.cbWndExtra		= 512;
+	wcex.cbWndExtra		= 0;
 	wcex.hInstance		= hInstance;
 	wcex.hIcon			= LoadIcon(hInstance, MAKEINTRESOURCE(IDI_WINAPI_DIFFUSION));
 	wcex.hCursor		= LoadCursor(nullptr, IDC_ARROW);
@@ -121,27 +127,57 @@ BOOL InitInstance(HINSTANCE hInstance, LPWSTR lpCmdLine, int nCmdShow)
 
 	srand((unsigned)time(nullptr));
 
+	msg_connect = RegisterWindowMessage(L"CONNECT");
+	msg_respond = RegisterWindowMessage(L"RESPOND");
+	msg_passball = RegisterWindowMessage(L"PASSBALL");
+
 	balls =  new std::vector<Ball>();
-	for (int i = 0; i < 30; ++i)
-	{
-		int px = 640 + rand() % 128;
-		int py = -320 + rand() % 128;
 
-		int vx =  -32 + rand() % 64;
-		int vy =  -32 + rand() % 64;
-
-		Vector2D<double> position(px, py);
-		Vector2D<double> velocity(vx, vy);
-
-		balls->push_back(Ball(60.0, position, velocity));
-	}
-
-	if (lstrcmp(lpCmdLine, L"Right"))
+	if (!lstrcmp(lpCmdLine, L"Right"))
 		bLeft = FALSE;
 
+	if (bLeft)
+	{
+		for (int i = 0; i < 64; ++i)
+		{
+			int px = 640 + rand() % 128;
+			int py = -320 + rand() % 128;
+
+			//int px = 0;
+			//int py = 0;
+
+			////
+
+			//int vx = rand() % 32;// -32 + rand() % 64;
+			//int vy = 0;// -32 + rand() % 64;
+
+			int vx = -32 + rand() % 64;
+			int vy = -32 + rand() % 64;
+
+			//int vx = 0;
+			//int vy = 0;
+
+			Vector2D<double> position(px, py);
+			Vector2D<double> velocity(vx, vy);
+
+			balls->push_back(Ball(bLeft, 60.0, position, velocity));
+		}
+
+
+		SetWindowPos(hWnd, HWND_TOP, 0, 64, W_WIDTH, W_HEIGHT, NULL);
+	}
+	else
+	{
+		SetWindowPos(hWnd, HWND_TOP, W_WIDTH, 64, W_WIDTH, W_HEIGHT, NULL);
+//		Sleep(50);
+//		PostMessage(HWND_BROADCAST, msg_connect, (WPARAM)hWnd, NULL);
+	}
+
+	PostMessage(HWND_BROADCAST, msg_connect, (WPARAM)hWnd, (LPARAM)bLeft);
+	
 	SetTimer(hWnd, ID_TIMER, 10, nullptr);
 	SetMenu(hWnd, nullptr);
-	SetWindowText(hWnd, lpCmdLine);
+//	SetWindowText(hWnd, lpCmdLine);	
 	ShowWindow(hWnd, nCmdShow);
 	UpdateWindow(hWnd);
 
@@ -162,6 +198,33 @@ BOOL InitInstance(HINSTANCE hInstance, LPWSTR lpCmdLine, int nCmdShow)
 //
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
+	if (message == msg_connect && !hWnd_second && (BOOL)lParam != bLeft)
+	{
+		hWnd_second = (HWND)wParam;
+		PostMessage(hWnd_second, msg_respond, (WPARAM)hWnd, NULL);
+
+		wchar_t s[100];
+		swprintf_s(s, 100, L"Left, hWnd:%lu, hWnd_second:%lu", (unsigned)hWnd, (unsigned)hWnd_second);
+
+		SetWindowText(hWnd, s);
+	}
+	else if (message == msg_respond)
+	{
+//		Sleep(1000);
+		hWnd_second = (HWND)wParam;
+
+		wchar_t s[100];
+		swprintf_s(s, 100, L"Right, hWnd:%lu, hWnd_second:%lu", (unsigned)hWnd, (unsigned)hWnd_second);
+
+		SetWindowText(hWnd, s);
+
+		//Sleep(1000);
+	}
+	else if (message == msg_passball)
+	{
+		ReceiveBall(hDC, wParam, lParam);
+	}
+
 	switch (message)
 	{
 	case WM_KEYDOWN:
@@ -171,6 +234,20 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			case VK_ESCAPE:
 				PostQuitMessage(0);
 				break;
+
+			//case VK_SPACE:
+			//	double px = -4096 + rand() % 8192;
+			//	double py = -4096 + rand() % 8192;
+			//	double vx = -64 + rand() % 128;
+			//	double vy = -64 + rand() % 128;
+			//	PassBall(Ball(60.0, px, py, vx, vy));
+
+			//	wchar_t s[100];
+			//	swprintf_s(s, 100, L"sent, py:%d, vx:%hd, vy:%hd,", (int)py, (short)vx, (short)vy);
+
+			//	SetWindowText(hWnd, s);
+
+			//	break;
 			}
 		}
 		break;
@@ -179,7 +256,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		{
 			PAINTSTRUCT ps;
 			HDC hdc = BeginPaint(hWnd, &ps);
-			SetMapMode(hdc, MAP_MODE);
+			SetMapMode(hdc, MM_LOMETRIC);
 
 			DrawBalls(hdc, balls);
 
@@ -211,10 +288,26 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 void AnimationTick(HWND hWnd, std::vector<Ball>* balls)
 {
-	for (auto it = balls->begin(); it != balls->end(); ++it)
+	for (auto it = balls->begin(); it != balls->end();)
 	{
-		it->HandleCollision(hWnd, hDC, balls);
+		BOOL erased = false;
+
 		it->Move();
+
+		if (it->HandleCollision(hWnd, hDC, bLeft, balls))
+		{
+			if (it->GetLeftOwner() == bLeft)
+			{
+				// Pass to second process
+				PassBall(*it);
+				it->SetLeftOwner(!bLeft);
+				it = balls->erase(it);///
+				erased = TRUE;
+			}
+		}
+
+		if (!erased)
+			it++;
 	}
 }
 
@@ -233,4 +326,41 @@ void DrawBalls(HDC hdc, std::vector<Ball>* balls) {
 
 	DeleteObject(hPen);
 	DeleteObject(hBrush);
+}
+
+void PassBall(Ball& ball)
+{
+	int py = ball.GetCenter().y;
+	short vx = ball.GetVelocity().x;
+	short vy = ball.GetVelocity().y;
+
+	int v = vx << 8 * sizeof(short) | (unsigned short)vy;
+
+	auto wparam = (WPARAM)py;
+	auto lparam = (LPARAM)v;
+
+	PostMessage(hWnd_second, msg_passball, wparam, lparam);
+}
+
+void ReceiveBall(HDC hdc, WPARAM wparam, LPARAM lparam)
+{
+	int py = (int)wparam;
+	int v = (int)lparam;
+	short vx = v >> 8 * sizeof(short);
+	short vy = v;
+
+	RECT rectangle;
+	SetMapMode(hdc, MM_LOMETRIC);
+	GetClientRect(WindowFromDC(hdc), &rectangle);
+	DPtoLP(hdc, (LPPOINT)&rectangle, 2);
+
+	//wchar_t s[100];
+	//swprintf_s(s, 100, L"received, py:%d, vx:%hd, vy:%hd,", (int)py, (short)vx, (short)vy);
+
+	//SetWindowText(hWnd, s);
+
+	if (!bLeft)
+		balls->push_back(Ball(bLeft, 60.0, 0.0, py, vx, vy));
+	else
+		balls->push_back(Ball(bLeft, 60.0, rectangle.right, py, vx, vy));
 }

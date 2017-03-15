@@ -11,19 +11,23 @@
 
 class Ball
 {
+	BOOL left_owner_;
 	double radius_;
 	Vector2D<double> position_;
 	Vector2D<double> velocity_;
 
 public:
-	Ball(double radius, Vector2D<double> position, Vector2D<double> velocity);
+	Ball(BOOL left_owner, double radius, Vector2D<double> position, Vector2D<double> velocity);
+	Ball(BOOL left_owner, double radius, double px, double py, double vx, double vy);
+	BOOL GetLeftOwner() const;
 	const Vector2D<double>& GetPosition() const;
 	const Vector2D<double>& GetVelocity() const;
 	Vector2D<double> GetCenter(int position = D_MIDDLE) const;
+	void SetLeftOwner(BOOL left_owner);
 	void SetRadius(double radius);
-	void SetPosition(Vector2D<double> position);
+	void SetCenter(Vector2D<double> position);
 	void SetVelocity(Vector2D<double> velocity);
-	void HandleCollision(HWND hWnd, HDC hdc, std::vector<Ball>* balls);
+	BOOL HandleCollision(HWND hWnd, HDC hdc, BOOL bLeft, std::vector<Ball>* balls);
 	void Move();
 	void Draw(HDC hdc) const;
 	~Ball();
