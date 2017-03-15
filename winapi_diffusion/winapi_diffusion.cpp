@@ -26,11 +26,11 @@ ATOM				MyRegisterClass(HINSTANCE hInstance);
 BOOL				InitInstance(HINSTANCE, LPWSTR, int);
 LRESULT CALLBACK	WndProc(HWND, UINT, WPARAM, LPARAM);
 
-//BOOL SetAtrribute(HWND hWnd, int nIndex, LONG value);
 void AnimationTick(HWND hWnd, std::vector<Ball>* balls);
 void DrawBalls(HDC hdc, std::vector<Ball>* balls);
 void PassBall(Ball& ball);
-void ReceiveBall(HDC hdc, WPARAM wparam, LPARAM lparam);
+void ReceiveBall(WPARAM wparam, LPARAM lparam);
+void CleanUp(HWND hWnd);
 
 //WORKAROUND
 BOOL bLeft = TRUE;
@@ -127,9 +127,9 @@ BOOL InitInstance(HINSTANCE hInstance, LPWSTR lpCmdLine, int nCmdShow)
 
 	srand((unsigned)time(nullptr));
 
-	msg_connect = RegisterWindowMessage(L"CONNECT");
-	msg_respond = RegisterWindowMessage(L"RESPOND");
-	msg_passball = RegisterWindowMessage(L"PASSBALL");
+	msg_connect = RegisterWindowMessage(L"DIFFUSION_CONNECT");
+	msg_respond = RegisterWindowMessage(L"DIFFUSION_RESPOND");
+	msg_passball = RegisterWindowMessage(L"DIFFUSION_PASSBALL");
 
 	balls =  new std::vector<Ball>();
 
@@ -203,26 +203,23 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		hWnd_second = (HWND)wParam;
 		PostMessage(hWnd_second, msg_respond, (WPARAM)hWnd, NULL);
 
-		wchar_t s[100];
-		swprintf_s(s, 100, L"Left, hWnd:%lu, hWnd_second:%lu", (unsigned)hWnd, (unsigned)hWnd_second);
+		wchar_t s[128];
+		swprintf_s(s, 128, L"Left, hWnd:%lu, hWnd_second:%lu", (unsigned)hWnd, (unsigned)hWnd_second);
 
 		SetWindowText(hWnd, s);
 	}
 	else if (message == msg_respond)
 	{
-//		Sleep(1000);
 		hWnd_second = (HWND)wParam;
 
-		wchar_t s[100];
-		swprintf_s(s, 100, L"Right, hWnd:%lu, hWnd_second:%lu", (unsigned)hWnd, (unsigned)hWnd_second);
+		wchar_t s[128];
+		swprintf_s(s, 128, L"Right, hWnd:%lu, hWnd_second:%lu", (unsigned)hWnd, (unsigned)hWnd_second);
 
 		SetWindowText(hWnd, s);
-
-		//Sleep(1000);
 	}
 	else if (message == msg_passball)
 	{
-		ReceiveBall(hDC, wParam, lParam);
+		ReceiveBall(wParam, lParam);
 	}
 
 	switch (message)
@@ -232,10 +229,23 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			switch (wParam)
 			{
 			case VK_ESCAPE:
+				CleanUp(hWnd);
 				PostQuitMessage(0);
 				break;
 			}
 		}
+		break;
+
+	case WM_LBUTTONUP:
+
+		POINT lpPoint;
+		lpPoint.x = GET_X_LPARAM(lParam);
+		lpPoint.y = GET_Y_LPARAM(lParam);
+		DPtoLP(hDC, &lpPoint, 1);
+
+		wchar_t s[128];
+		swprintf_s(s, 128, L"Logical units: %d, %d", lpPoint.x, lpPoint.y);
+		SetWindowText(hWnd, s);
 		break;
 
 	case WM_PAINT:
@@ -257,11 +267,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			AnimationTick(hWnd, balls);
 			InvalidateRect(hWnd, nullptr, true);
 
-			wchar_t s[100];
-			swprintf_s(s, 100, L"Balls: %u", balls->size());
+			//wchar_t s[128];
+			//swprintf_s(s, 128, L"Balls: %u", balls->size());
 
-			SetWindowText(hWnd, s);
-
+			//SetWindowText(hWnd, s);
 			break;
 			}
 		}
@@ -269,12 +278,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		break;
 
 	case WM_DESTROY:
+		CleanUp(hWnd);
 		PostQuitMessage(0);
 		break;
 
 	default:
 		return DefWindowProc(hWnd, message, wParam, lParam);
 	}
+
 	return 0;
 }
 
@@ -330,7 +341,7 @@ void PassBall(Ball& ball)
 	PostMessage(hWnd_second, msg_passball, wparam, lparam);
 }
 
-void ReceiveBall(HDC hdc, WPARAM wparam, LPARAM lparam)
+void ReceiveBall(WPARAM wparam, LPARAM lparam)
 {
 	int py = (int)wparam;
 	int v = (int)lparam;
@@ -338,12 +349,12 @@ void ReceiveBall(HDC hdc, WPARAM wparam, LPARAM lparam)
 	short vy = v;
 
 	RECT rectangle;
-	SetMapMode(hdc, MM_LOMETRIC);
-	GetClientRect(WindowFromDC(hdc), &rectangle);
-	DPtoLP(hdc, (LPPOINT)&rectangle, 2);
+	SetMapMode(hDC, MM_LOMETRIC);
+	GetClientRect(WindowFromDC(hDC), &rectangle);
+	DPtoLP(hDC, (LPPOINT)&rectangle, 2);
 
-	//wchar_t s[100];
-	//swprintf_s(s, 100, L"received, py:%d, vx:%hd, vy:%hd,", (int)py, (short)vx, (short)vy);
+	//wchar_t s[128];
+	//swprintf_s(s, 128, L"received, py:%d, vx:%hd, vy:%hd,", (int)py, (short)vx, (short)vy);
 
 	//SetWindowText(hWnd, s);
 
@@ -351,4 +362,10 @@ void ReceiveBall(HDC hdc, WPARAM wparam, LPARAM lparam)
 		balls->push_back(Ball(bLeft, 60.0, rectangle.right, py, vx, vy));
 	else
 		balls->push_back(Ball(bLeft, 60.0, 0.0, py, vx, vy));
+}
+
+void CleanUp(HWND hWnd)
+{
+	ReleaseDC(hWnd, hDC);
+	delete balls;
 }
