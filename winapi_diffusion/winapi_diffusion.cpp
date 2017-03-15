@@ -234,20 +234,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			case VK_ESCAPE:
 				PostQuitMessage(0);
 				break;
-
-			//case VK_SPACE:
-			//	double px = -4096 + rand() % 8192;
-			//	double py = -4096 + rand() % 8192;
-			//	double vx = -64 + rand() % 128;
-			//	double vy = -64 + rand() % 128;
-			//	PassBall(Ball(60.0, px, py, vx, vy));
-
-			//	wchar_t s[100];
-			//	swprintf_s(s, 100, L"sent, py:%d, vx:%hd, vy:%hd,", (int)py, (short)vx, (short)vy);
-
-			//	SetWindowText(hWnd, s);
-
-			//	break;
 			}
 		}
 		break;
@@ -256,8 +242,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		{
 			PAINTSTRUCT ps;
 			HDC hdc = BeginPaint(hWnd, &ps);
-			SetMapMode(hdc, MM_LOMETRIC);
 
+			SetMapMode(hdc, MM_LOMETRIC);
 			DrawBalls(hdc, balls);
 
 			EndPaint(hWnd, &ps);
@@ -270,6 +256,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		case ID_TIMER:
 			AnimationTick(hWnd, balls);
 			InvalidateRect(hWnd, nullptr, true);
+
+			wchar_t s[100];
+			swprintf_s(s, 100, L"Balls: %u", balls->size());
+
+			SetWindowText(hWnd, s);
+
 			break;
 			}
 		}
@@ -290,23 +282,19 @@ void AnimationTick(HWND hWnd, std::vector<Ball>* balls)
 {
 	for (auto it = balls->begin(); it != balls->end();)
 	{
-		BOOL erased = false;
-
 		it->Move();
+		it->HandleCollision(hWnd, hDC, bLeft, balls);
 
-		if (it->HandleCollision(hWnd, hDC, bLeft, balls))
+		if (it->NeedPass() && it->GetLeftOwner() == bLeft)
 		{
-			if (it->GetLeftOwner() == bLeft)
-			{
-				// Pass to second process
-				PassBall(*it);
-				it->SetLeftOwner(!bLeft);
-				it = balls->erase(it);///
-				erased = TRUE;
-			}
+			// Pass to second process
+			PassBall(*it);
+			it->SetLeftOwner(!bLeft);
 		}
 
-		if (!erased)
+		if (it->NeedErase())
+			it = balls->erase(it);
+		else
 			it++;
 	}
 }
@@ -359,8 +347,8 @@ void ReceiveBall(HDC hdc, WPARAM wparam, LPARAM lparam)
 
 	//SetWindowText(hWnd, s);
 
-	if (!bLeft)
-		balls->push_back(Ball(bLeft, 60.0, 0.0, py, vx, vy));
-	else
+	if (bLeft)
 		balls->push_back(Ball(bLeft, 60.0, rectangle.right, py, vx, vy));
+	else
+		balls->push_back(Ball(bLeft, 60.0, 0.0, py, vx, vy));
 }

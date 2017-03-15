@@ -5,17 +5,31 @@ Ball::Ball(BOOL left_owner, double radius, Vector2D<double> position, Vector2D<d
 	: left_owner_(left_owner), radius_(radius), velocity_(velocity)
 {
 	SetCenter(position);
+	need_pass_ = FALSE;
+	need_erase_ = FALSE;
 }
 
 Ball::Ball(BOOL left_owner, double radius, double px, double py, double vx, double vy)
 	: left_owner_(left_owner), radius_(radius), velocity_(Vector2D<double>(vx, vy))
 {
 	SetCenter(Vector2D<double>(px, py));
+	need_pass_ = FALSE;
+	need_erase_ = FALSE;
 }
 
 BOOL Ball::GetLeftOwner() const
 {
 	return left_owner_;
+}
+
+BOOL Ball::NeedPass() const
+{
+	return need_pass_;
+}
+
+BOOL Ball::NeedErase() const
+{
+	return need_erase_;
 }
 
 const Vector2D<double>& Ball::GetPosition() const
@@ -71,7 +85,7 @@ void Ball::SetVelocity(Vector2D<double> velocity)
 	velocity_ = velocity;
 }
 
-BOOL Ball::HandleCollision(HWND hWnd, HDC hdc, BOOL bLeft, std::vector<Ball>* balls)
+void Ball::HandleCollision(HWND hWnd, HDC hdc, BOOL bLeft, std::vector<Ball>* balls)
 {
 	RECT rectangle;
 	SetMapMode(hdc, MM_LOMETRIC);
@@ -87,7 +101,10 @@ BOOL Ball::HandleCollision(HWND hWnd, HDC hdc, BOOL bLeft, std::vector<Ball>* ba
 	if (bLeft)
 	{
 		if (GetCenter(D_MIDDLE).x > rectangle.right)
-			return TRUE;
+		{
+			need_pass_ = TRUE;
+//			return;
+		}
 
 		if (GetCenter(D_LEFT).x < rectangle.left)
 			velocity_.x *= -1.0;
@@ -98,10 +115,31 @@ BOOL Ball::HandleCollision(HWND hWnd, HDC hdc, BOOL bLeft, std::vector<Ball>* ba
 			velocity_.x *= -1.0;
 
 		if (GetCenter(D_MIDDLE).x < rectangle.left)
-			return TRUE;
+		{
+			need_pass_ = TRUE;
+//			return;
+		}
 	}
 
-	return FALSE;
+	if (!need_pass_)
+		return;
+
+	if (bLeft)
+	{
+		if (GetCenter(D_LEFT).x > rectangle.right)
+		{
+			need_erase_ = TRUE;
+			return;
+		}
+	}
+	else
+	{
+		if (GetCenter(D_RIGHT).x < rectangle.left)
+		{
+			need_erase_ = TRUE;
+			return;
+		}
+	}
 }
 
 void Ball::Move()
