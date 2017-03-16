@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "Ball.h"
 
-Ball::Ball(BOOL left_owner, double radius, Vector2D<double> position, Vector2D<double> velocity)
+Ball::Ball(BOOL left_owner, int radius, Vector2D<int> position, Vector2D<int> velocity)
 	: left_owner_(left_owner), radius_(radius), velocity_(velocity)
 {
 	SetCenter(position);
@@ -9,10 +9,10 @@ Ball::Ball(BOOL left_owner, double radius, Vector2D<double> position, Vector2D<d
 	need_erase_ = FALSE;
 }
 
-Ball::Ball(BOOL left_owner, double radius, double px, double py, double vx, double vy)
-	: left_owner_(left_owner), radius_(radius), velocity_(Vector2D<double>(vx, vy))
+Ball::Ball(BOOL left_owner, int radius, int px, int py, int vx, int vy)
+	: left_owner_(left_owner), radius_(radius), velocity_(Vector2D<int>(vx, vy))
 {
-	SetCenter(Vector2D<double>(px, py));
+	SetCenter(Vector2D<int>(px, py));
 	need_pass_ = FALSE;
 	need_erase_ = FALSE;
 }
@@ -32,37 +32,37 @@ BOOL Ball::NeedErase() const
 	return need_erase_;
 }
 
-const Vector2D<double>& Ball::GetPosition() const
+const Vector2D<int>& Ball::GetPosition() const
 {
 	return position_;
 }
 
-const Vector2D<double>& Ball::GetVelocity() const
+const Vector2D<int>& Ball::GetVelocity() const
 {
 	return velocity_;
 }
 
-Vector2D<double> Ball::GetCenter(int position) const
+Vector2D<int> Ball::GetCenter(int position) const
 {
 	switch (position) {
 	case D_TOP:
-		return position_ + Vector2D<double>(radius_, 2*radius_);
+		return position_ + Vector2D<int>(radius_, 2*radius_);
 
 	case D_BOTTOM:
-		return position_ + Vector2D<double>(radius_, 0.0);
+		return position_ + Vector2D<int>(radius_, 0);
 
 	case D_LEFT:
-		return position_ + Vector2D<double>(0.0, radius_);
+		return position_ + Vector2D<int>(0, radius_);
 
 	case D_RIGHT:
-		return position_ + Vector2D<double>(2 * radius_, radius_);
+		return position_ + Vector2D<int>(2 * radius_, radius_);
 
 	case D_MIDDLE:
 	default:
-		return position_ + Vector2D<double>(radius_, radius_);
+		return position_ + Vector2D<int>(radius_, radius_);
 	}
 
-	return Vector2D<double>();
+	return Vector2D<int>();
 }
 
 void Ball::SetLeftOwner(BOOL left_owner)
@@ -70,17 +70,17 @@ void Ball::SetLeftOwner(BOOL left_owner)
 	left_owner_ = left_owner;
 }
 
-void Ball::SetRadius(double radius)
+void Ball::SetRadius(int radius)
 {
 	radius_ = radius;
 }
 
-void Ball::SetCenter(Vector2D<double> position)
+void Ball::SetCenter(Vector2D<int> position)
 {
-	position_ = position + Vector2D<double>(-radius_, -radius_);
+	position_ = position + Vector2D<int>(-radius_, -radius_);
 }
 
-void Ball::SetVelocity(Vector2D<double> velocity)
+void Ball::SetVelocity(Vector2D<int> velocity)
 {
 	velocity_ = velocity;
 }
@@ -93,10 +93,10 @@ void Ball::HandleCollision(HWND hWnd, HDC hdc, BOOL bLeft, std::vector<Ball>* ba
 	DPtoLP(hdc, (LPPOINT)&rectangle, 2);
 
 	if (GetCenter(D_TOP).y > rectangle.top)
-		velocity_.y *= -1.0;
+		velocity_.y *= -1;
 
 	if (GetCenter(D_BOTTOM).y < rectangle.bottom)
-		velocity_.y *= -1.0;
+		velocity_.y *= -1;
 
 	if (bLeft)
 	{
@@ -107,12 +107,12 @@ void Ball::HandleCollision(HWND hWnd, HDC hdc, BOOL bLeft, std::vector<Ball>* ba
 		}
 
 		if (GetCenter(D_LEFT).x < rectangle.left)
-			velocity_.x *= -1.0;
+			velocity_.x *= -1;
 	}
 	else
 	{
 		if (GetCenter(D_RIGHT).x > rectangle.right)
-			velocity_.x *= -1.0;
+			velocity_.x *= -1;
 
 		if (GetCenter(D_MIDDLE).x < rectangle.left)
 		{
@@ -149,9 +149,9 @@ void Ball::Move()
 
 void Ball::Draw(HDC hdc) const
 {
-	double x = position_.x;
-	double y = position_.y;
-	Ellipse(hdc, x, y, x + 2.0 * radius_, y + 2.0 * radius_);
+	int x = position_.x;
+	int y = position_.y;
+	Ellipse(hdc, x, y, x + 2 * radius_, y + 2 * radius_);
 }
 
 Ball::~Ball()

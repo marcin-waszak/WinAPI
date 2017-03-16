@@ -157,10 +157,10 @@ BOOL InitInstance(HINSTANCE hInstance, LPWSTR lpCmdLine, int nCmdShow)
 			//int vx = 0;
 			//int vy = 0;
 
-			Vector2D<double> position(px, py);
-			Vector2D<double> velocity(vx, vy);
+			Vector2D<int> position(px, py);
+			Vector2D<int> velocity(vx, vy);
 
-			balls->push_back(Ball(bLeft, 60.0, position, velocity));
+			balls->push_back(Ball(bLeft, 60, position, velocity));
 		}
 
 
@@ -169,8 +169,6 @@ BOOL InitInstance(HINSTANCE hInstance, LPWSTR lpCmdLine, int nCmdShow)
 	else
 	{
 		SetWindowPos(hWnd, HWND_TOP, W_WIDTH, 64, W_WIDTH, W_HEIGHT, NULL);
-//		Sleep(50);
-//		PostMessage(HWND_BROADCAST, msg_connect, (WPARAM)hWnd, NULL);
 	}
 
 	PostMessage(HWND_BROADCAST, msg_connect, (WPARAM)hWnd, (LPARAM)bLeft);
@@ -359,9 +357,9 @@ void ReceiveBall(WPARAM wparam, LPARAM lparam)
 	//SetWindowText(hWnd, s);
 
 	if (bLeft)
-		balls->push_back(Ball(bLeft, 60.0, rectangle.right, py, vx, vy));
+		balls->push_back(Ball(bLeft, 60, rectangle.right, py, vx, vy));
 	else
-		balls->push_back(Ball(bLeft, 60.0, 0.0, py, vx, vy));
+		balls->push_back(Ball(bLeft, 60, 0, py, vx, vy));
 }
 
 void CleanUp(HWND hWnd)

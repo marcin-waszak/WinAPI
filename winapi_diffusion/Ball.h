@@ -14,23 +14,23 @@ class Ball
 	BOOL left_owner_;
 	BOOL need_pass_;
 	BOOL need_erase_;
-	double radius_;
-	Vector2D<double> position_;
-	Vector2D<double> velocity_;
+	int radius_;
+	Vector2D<int> position_;
+	Vector2D<int> velocity_;
 
 public:
-	Ball(BOOL left_owner, double radius, Vector2D<double> position, Vector2D<double> velocity);
-	Ball(BOOL left_owner, double radius, double px, double py, double vx, double vy);
+	Ball(BOOL left_owner, int radius, Vector2D<int> position, Vector2D<int> velocity);
+	Ball(BOOL left_owner, int radius, int px, int py, int vx, int vy);
 	BOOL GetLeftOwner() const;
 	BOOL NeedPass() const;
 	BOOL NeedErase() const;
-	const Vector2D<double>& GetPosition() const;
-	const Vector2D<double>& GetVelocity() const;
-	Vector2D<double> GetCenter(int position = D_MIDDLE) const;
+	const Vector2D<int>& GetPosition() const;
+	const Vector2D<int>& GetVelocity() const;
+	Vector2D<int> GetCenter(int position = D_MIDDLE) const;
 	void SetLeftOwner(BOOL left_owner);
-	void SetRadius(double radius);
-	void SetCenter(Vector2D<double> position);
-	void SetVelocity(Vector2D<double> velocity);
+	void SetRadius(int radius);
+	void SetCenter(Vector2D<int> position);
+	void SetVelocity(Vector2D<int> velocity);
 	void HandleCollision(HWND hWnd, HDC hdc, BOOL bLeft, std::vector<Ball>* balls);
 	void Move();
 	void Draw(HDC hdc) const;
